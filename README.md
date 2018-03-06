@@ -1,5 +1,5 @@
 # TSS1-Wireshark
-Wireshark project of the TSS1 group for the Wireless networks course 2017/2018
+Wireshark project of the TSS1 group for the Wireless Networking course 2017/2018
 
 The implementation-1 and 2 folders have old code of different approaches we tried before arriving at the main code in implementation-3
 
