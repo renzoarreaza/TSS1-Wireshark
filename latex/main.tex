@@ -1,0 +1,185 @@
+\documentclass[12]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{scrextend}
+\usepackage{subcaption}
+\usepackage{subfig}
+\usepackage{comment}
+\usepackage{amssymb}
+\usepackage{nomencl}
+\usepackage{url}
+\usepackage[font=small]{caption}
+\usepackage[labelfont=bf]{caption}
+\usepackage[justification=centering]{caption}
+\usepackage{natbib}
+\usepackage[toc,page]{appendix}
+\usepackage{textcomp}
+\usepackage[headsep=.5cm]{geometry}
+\textheight=600pt
+\makenomenclature
+\setlength\parindent{0pt}
+
+\title{Modulation Formats vs Data Rate (Wi-Fi)\\
+        Wireshark Project - Wireless Networking}
+\author{
+    Renzo Arreaza\\
+    \texttt{4567560}
+    \and
+    Marcelo Guerrero\\
+    \texttt{4736605}
+}
+
+\date{March 2018}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\begin{document}
+
+
+\maketitle
+
+\section{Introduction}\\\\
+The relation between modulation and data rate for 802.11g/n/ac technologies is fixed and determined by the MCS (Modulation and Coding Scheme) index. Different combinations of modulation schemes and coding rates are represented by the value of this index. The communication between user devices and access points (AP) can dynamically select one of these combinations to adjust the data rate according to the channel conditions. In this project, we will look at the modulation and data rate changes on 802.11g/n networks when the number of users and distance to the AP are modified. The trade-offs between data rate and coverage, and data rate and capacity are explored. This project is limited to a network with a single AP. The following tests were performed:\\
+
+1. A single user in different locations. The farthest the distance to the AP, the lower the SNR, and hence the lower the data rate (modulation)\\
+2. Varying number of users in the same location. The higher the number of users, the more resources are shared, and hence the lower the data rate (modulation)
+
+\section{Data Gathering and Processing}\\\\
+We use a Python script to collect and process the data. The input parameters to this script are: interface to be monitored, BSSID of the AP, name of the file to store the raw data and duration of the test. This script also reads a configuration file called "mac\_addresses.txt", which contains the MAC addresses of the devices that will be analyzed. The script calls a process in Linux to capture packets. We gathered data using tshark. To be able to get radio information, we put the wifi adapter in promiscuous mode using the airmon-ng command. See below the used tshark command (interface, duration and filename are the input parameters discussed above).\\
+
+\begin{addmargin}[1em]{2em}% 1em left, 2em right
+"sudo tshark -i "+interface+" -T fields -e wlan\_radio.phy -e wlan\_radio.data\_rate -e wlan\_radio.11n.mcs\_index -e wlan.bssid -e wlan.da -e frame.time\_epoch -f "wlan type data subtype data or wlan type data subtype qos-data" -E separator=, -E quote=d -a duration:"+str(duration*60)+" $>$ "+filename\\
+\end{addmargin}\\\\
+
+
+The information we get is the PHY type, data rate, mcs index for 802.11n, bssid, destination MAC address and timestamp of the captured frame. We only take regular data packets and QoS data packets. The output of the command is piped to a text file. The raw data is then processed to create a CSV file for each Wi-Fi technology (only 802.11g/n) for each MAC address found in the configuration file. These files store the total amount of frames received per minute for each combination of modulation scheme and coding rate that was captured. Only the frames that were sent by the AP specified in the input parameter are used.\\
+
+Finally, the CSV files can be analyzed in Matlab. We created a script that divides the duration of the test in three sectors or intervals of time. The output of the script are three graphs. The first graph plots the number of frames per time for each modulation scheme. The second graph shows the percentage of frames received per modulation scheme for each sector. The last graph, shows the percentage of frames received per data rate for each sector. The scripts and measurement data can be found in \cite{github}
+
+\section{Results}
+We ran each measurement for 30 minutes, and changed parameters at the 10 and 20 minute marks.
+
+\subsection{Measurement 1: Single user in different locations}\\\\
+In the first test, a single device connected to an access point was moved around three different locations. For each location, we captured frames for a period of ten minutes. The 802.11n and 802.11g networks were tested in different locations.\\\\The results for the 802.11n network are presented in figure 1. This test was performed in an apartment where the AP was located in the living room. The first location for the single user was the living room, that is why, for the first ten minutes the highest modulation scheme and data rate were achieved and nearly (96\%) all packets were transmitted with this characteristics (figures \ref{fig:n_meas1_sub1}, \ref{fig:n_meas1_sub2} and \ref{fig:n_meas1_sub3}). The second location was a bedroom that was located opposite to the living room. As there were more obstacles between the user and the AP, the signal was further attenuated and thus, the AP rapidly changed the modulation scheme (figure \ref{fig:n_meas1_sub1}). The dominating modulation was 16QAM which went from 4\% in the first interval to 74\% in the second interval (figure \ref{fig:n_meas1_sub2}). One may think that the data rate was not severely decreased since the modulation scheme went from 64QAM to 16QAM. However, this is not an accurate observation since the coding rate is not being taken into consideration. From figure \ref{fig:n_meas1_sub3}, we see that the data rate in the first sector was presenting values of 65 Mb/s, 72.2 Mb/s, 135 Mb/s and 150 Mb/s, while in the second sector the dominating values were 26 Mb/s and 28.9 Mb/s. These values are comparable with the data rates obtained with the QPSK modulation scheme. Finally, the user was moved to a location between the previous two rooms. We could see that 64QAM was again the modulation scheme with the highest number of frames reaching a value of 73\%. From figure \ref{fig:n_meas1_sub3}, we can see that the date rate was spread and equally distributed.\\\\
+In figure 2, we present the results for the 802.11g network. This test was performed in a 3 storey house, with the access point on the first floor. The first location was with the user in a room on the ground floor. We can see in figure \ref{fig:g_meas1_sub1} and \ref{fig:g_meas1_sub2} that 16QAM(30.9\%) and QPSK(67.6\%) were the most used modulations, with 64QAM only 1.5\%. In figure \ref{fig:g_meas1_sub3} we can see that the data rate of most (67.6\%) of the packets is 18 Mbps, with some having a data rate of 24(24.4\%) and 36 Mbps(6.4\%).
+
+In the second sector the device was placed on the same floor as the access point and it's clearly viseble that there is a better modulation and faster data rate in use, with 91.7\% of the traffic being QAM64, and only 4.5\% and 3.8\% for 16QAM and QPSK respectively. The data rates are also considerably higher, with 81.7\% of the packets having a data rate of 54 Mbps and 10.1\% have 48 Mbps.
+
+Finally, in the third sector, the device was placed in a room on the second floor. The results show that the channel quality is in between the two other sectors, with 75.7\% of the packets being 64QAM modulated and 24.2\% having 16QAM. The data rates are also in between the first two sectors. 45.9\% of the packets having a data rate of 48Mbps, 29.9\% having a rate of 54Mbps and 20.4\% of having a rate of 36Mbps
+
+\\\\
+\begin{figure}[!htb]
+\hspace*{-3cm}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{"measurement 1/n_test1"}
+  \caption{Traffic per modulation}
+  \label{fig:n_meas1_sub1}
+\end{subfigure}%
+\hspace*{-0.6cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 1/n_tes2"}
+  \caption{Percentage of frames of each\\ modulation per location}
+  \label{fig:n_meas1_sub2}
+\end{subfigure}%
+\hspace*{-1.2cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 1/n_test3"}
+  \caption{Datarate usage percentage per location}
+  \label{fig:n_meas1_sub3}
+\end{subfigure}
+\caption{Measurement 1 - 802.11n}
+\label{fig:n_meas1}
+\end{figure}
+
+\begin{figure}[!htb]
+\hspace*{-3cm}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{"measurement 1/g_fig1"}
+  \caption{Traffic per modulation}
+  \label{fig:g_meas1_sub1}
+\end{subfigure}%
+\hspace*{-0.6cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 1/g_fig2"}
+  \caption{Percentage of frames of each\\ modulation per location}
+  \label{fig:g_meas1_sub2}
+\end{subfigure}%
+\hspace*{-1.2cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 1/g_fig3"}
+  \caption{Datarate usage percentage per location}
+  \label{fig:g_meas1_sub3}
+\end{subfigure}
+\caption{Measurement 1 - 802.11g}
+\label{fig:g_meas1}
+\end{figure}
+
+\newpage
+\subsection{Measurement 2: Varying number of users in the same location}\\\\
+
+In test 2, we located five devices near an AP operating in 802.11n. In the first interval of time, we requested data with only one of the five devices. Then, for the second interval, all five devices were requesting data from the AP. Finally, for the last interval, the only operating device was the same used in the first interval. The results are presented in figure \ref{fig:n_meas2}. From figures \ref{fig:n_meas2_sub1} and \ref{fig:n_meas2_sub2}, we can see that there is a small increase in the number of frames for the modulation 16QAM in the second sector which is when all three devices were operating. The percentage of frames for this modulation went from 4\% to about 8\%.
+\\
+This same test was also done with 802.11g. The results can be seen in figure \ref{fig:g_meas2}. This test was however only performed with two extra devices during the second interval, which resulted in inconclusive results. The same results are expected as with 802.11n, but more devices are needed to make the effects visible in the measurements.
+
+
+\begin{figure}[!htb]
+\hspace*{-3cm}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{"measurement 2/n_test11"}
+  \caption{Traffic per modulation}
+  \label{fig:n_meas2_sub1}
+\end{subfigure}%
+\hspace*{-0.6cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 2/n_test22"}
+  \caption{Percentage of frames of each\\ modulation per location}
+  \label{fig:n_meas2_sub2}
+\end{subfigure}%
+\hspace*{-1.2cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 2/n_test33"}
+  \caption{Datarate usage percentage per location}
+  \label{fig:n_meas2_sub3}
+\end{subfigure}
+\caption{Measurement 2 - Multiple Devices One Location (802.11n)}
+\label{fig:n_meas2}
+\end{figure}
+
+\begin{figure}[!htb]
+\hspace*{-3cm}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{"measurement 2/g_dev1fig1"}
+  \caption{Traffic per modulation}
+  \label{fig:g_meas2_sub1}
+\end{subfigure}%
+\hspace*{-0.6cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 2/g_dev1fig2"}
+  \caption{Percentage of frames of each\\ modulation per location}
+  \label{fig:g_meas2_sub2}
+\end{subfigure}%
+\hspace*{-1.2cm}
+\begin{subfigure}{.5\textwidth}
+  \includegraphics[width=\linewidth]{"measurement 2/g_dev1fig3"}
+  \caption{Datarate usage percentage per location}
+  \label{fig:g_meas2_sub3}
+\end{subfigure}
+\caption{Measurement 2 - Multiple Devices One Location (802.11g)}
+\label{fig:g_meas2}
+\end{figure}
+
+
+\newpage
+\section{Conclusion}
+There is no direct relation between modulation and data rate since several factors such as coding rate, bandwidth of the channel, spatial streams and guard intervals, also impose a limitation on the data rate achieved. It is incorrect to assume that a high modulation scheme such as 16QAM always leads to a high data rate. In some cases, as in sector 2 of test 1, the performance obtained with this modulation is equal to or even lower than the one obtained with QPSK.\\
+
+In this project, we assume that the variation in the strength of the signal when a device is moved to different locations is caused by obstacles. However, this assumption is not entirely correct since it is possible that in certain places, a low SNR is caused by interference of surrounding networks instead of by obstacles. Therefore, an improvement would be to modify the code to also capture frames from surrounding networks operating in the same frequency, or having a more controlled environment.\\\\
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
